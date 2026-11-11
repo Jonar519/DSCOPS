@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DSCOPS Playground</title>
+    <meta
+      name="description"
+      content="Playground de DSCOPS: escribe infraestructura declarativa y compílala segura."
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --bg-soft: #111831;
+        --panel: #141c36;
+        --panel-2: #0f1730;
+        --line: #26345c;
+        --line-soft: #1c2848;
+        --text: #e7ecff;
+        --muted: #94a2c9;
+        --accent: #67e8f9;
+        --accent-2: #a78bfa;
+        --green: #4ade80;
+        --yellow: #facc15;
+        --red: #fb7185;
+        --orange: #fb923c;
+        --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+        --mono: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, monospace;
+        --sans: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--sans);
+        color: var(--text);
+        background:
+          radial-gradient(1100px 500px at 8% -8%, rgba(103, 232, 249, 0.16), transparent 60%),
+          radial-gradient(900px 500px at 100% 0%, rgba(167, 139, 250, 0.18), transparent 55%),
+          var(--bg);
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .shell {
+        width: min(1480px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 22px 0 34px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        min-width: 0;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        background: linear-gradient(145deg, rgba(103, 232, 249, 0.2), rgba(167, 139, 250, 0.24));
+        border: 1px solid rgba(103, 232, 249, 0.45);
+        box-shadow: 0 0 34px rgba(103, 232, 249, 0.12) inset;
+        font-family: var(--mono);
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(20px, 2vw, 27px);
+        letter-spacing: 0.02em;
+      }
+
+      .tagline {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .header-links {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .header-links a {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px 12px;
+        color: var(--text);
+        font-size: 12.5px;
+        background: rgba(20, 28, 54, 0.7);
+      }
+
+      .header-links a:hover {
+        border-color: var(--accent);
+        text-decoration: none;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(20, 28, 54, 0.96), rgba(15, 23, 48, 0.96));
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line-soft);
+        background: rgba(10, 16, 34, 0.4);
+      }
+
+      .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 12px var(--green);
+      }
+
+      .small-actions {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        font-family: var(--sans);
+        color: var(--text);
+        border: 1px solid var(--line);
+        background: rgba(17, 24, 49, 0.9);
+        border-radius: 9px;
+        padding: 8px 12px;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 150ms ease;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: wait;
+        transform: none;
+      }
+
+      button.ghost {
+        background: transparent;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      button.primary {
+        border-color: transparent;
+        color: #04101b;
+        background: linear-gradient(135deg, var(--accent), #8be9c1);
+        box-shadow: 0 10px 28px rgba(103, 232, 249, 0.2);
+      }
+
+      button.primary:hover {
+        filter: brightness(1.06);
+      }
+
+      .editor-wrap {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        height: 474px;
+        background: var(--panel-2);
+      }
+
+      .gutter {
+        margin: 0;
+        padding: 14px 10px 14px 0;
+        overflow: hidden;
+        text-align: right;
+        color: #536188;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.65;
+        user-select: none;
+        border-right: 1px solid var(--line-soft);
+        background: rgba(8, 13, 29, 0.45);
+      }
+
+      #source {
+        width: 100%;
+        height: 100%;
+        resize: none;
+        border: 0;
+        outline: 0;
+        padding: 14px 16px;
+        background: transparent;
+        color: #dce6ff;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.65;
+        tab-size: 2;
+        white-space: pre;
+        overflow: auto;
+      }
+
+      #source::selection {
+        background: rgba(103, 232, 249, 0.24);
+      }
+
+      .editor-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 14px;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .targets {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .target {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .target:has(input:checked) {
+        border-color: rgba(103, 232, 249, 0.55);
+        color: var(--accent);
+        background: rgba(103, 232, 249, 0.07);
+      }
+
+      .target input {
+        accent-color: var(--accent);
+        margin: 0;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .results {
+        min-height: 620px;
+      }
+
+      .statusbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line-soft);
+        background: rgba(10, 16, 34, 0.4);
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: rgba(15, 23, 48, 0.8);
+      }
+
+      .pill.error {
+        color: #ffd3da;
+        border-color: rgba(251, 113, 133, 0.45);
+        background: rgba(251, 113, 133, 0.1);
+      }
+
+      .pill.warning {
+        color: #ffefb5;
+        border-color: rgba(250, 204, 21, 0.4);
+        background: rgba(250, 204, 21, 0.09);
+      }
+
+      .pill.info {
+        color: #b7f4ff;
+        border-color: rgba(103, 232, 249, 0.35);
+        background: rgba(103, 232, 249, 0.08);
+      }
+
+      .pill.ok {
+        color: #c8ffdd;
+        border-color: rgba(74, 222, 128, 0.4);
+        background: rgba(74, 222, 128, 0.09);
+      }
+
+      .results-body {
+        padding: 12px 14px 14px;
+      }
+
+      .diag-list {
+        display: grid;
+        gap: 8px;
+        max-height: 292px;
+        overflow: auto;
+        padding-right: 2px;
+      }
+
+      .diag {
+        border: 1px solid var(--line-soft);
+        border-left: 3px solid var(--muted);
+        border-radius: 9px;
+        padding: 9px 11px;
+        background: rgba(9, 14, 30, 0.5);
+        cursor: pointer;
+      }
+
+      .diag:hover {
+        background: rgba(103, 232, 249, 0.05);
+      }
+
+      .diag.error {
+        border-left-color: var(--red);
+      }
+
+      .diag.warning {
+        border-left-color: var(--yellow);
+      }
+
+      .diag.info {
+        border-left-color: var(--accent);
+      }
+
+      .diag-top {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+
+      .code {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+
+      .diag-message {
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
+      .diag-meta {
+        margin-top: 4px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .diag-hint {
+        margin-top: 4px;
+        font-size: 11.5px;
+        color: #a9b9df;
+      }
+
+      .diag-hint::before {
+        content: "= ";
+        color: var(--accent);
+      }
+
+      .empty {
+        padding: 22px 12px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12.5px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+      }
+
+      .artifact-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 14px 0 8px;
+        padding-top: 11px;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .artifact-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 6px;
+        overflow: auto;
+        padding-bottom: 2px;
+      }
+
+      .tab {
+        border: 1px solid var(--line-soft);
+        border-radius: 7px;
+        padding: 5px 8px;
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        white-space: nowrap;
+      }
+
+      .tab.active {
+        color: var(--accent);
+        border-color: rgba(103, 232, 249, 0.45);
+        background: rgba(103, 232, 249, 0.07);
+      }
+
+      .artifact-content {
+        margin: 0;
+        height: 190px;
+        overflow: auto;
+        border: 1px solid var(--line-soft);
+        border-radius: 9px;
+        padding: 11px;
+        background: #080d1d;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: #cfe0ff;
+        white-space: pre;
+      }
+
+      .banner {
+        display: none;
+        margin-bottom: 10px;
+        border: 1px solid rgba(251, 113, 133, 0.5);
+        border-radius: 9px;
+        padding: 9px 11px;
+        background: rgba(251, 113, 133, 0.08);
+        color: #ffd3da;
+        font-size: 12px;
+      }
+
+      .banner.show {
+        display: block;
+      }
+
+      .spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: inline-block;
+        vertical-align: -2px;
+        margin-right: 6px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      footer {
+        margin-top: 16px;
+        color: #6f7ea8;
+        font-size: 11.5px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 980px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .editor-wrap {
+          height: 390px;
+        }
+
+        .results {
+          min-height: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          width: min(100% - 22px, 1480px);
+          padding-top: 14px;
+        }
+
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .header-links {
+          justify-content: flex-start;
+        }
+
+        .editor-foot {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .actions {
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand">
+          <div class="mark" aria-hidden="true">{ }</div>
+          <div>
+            <h1>DSCOPS Playground</h1>
+            <p class="tagline">Escribe tu infraestructura una vez, compílala segura.</p>
+          </div>
+        </div>
+        <nav class="header-links" aria-label="Enlaces">
+          <a href="/docs">OpenAPI</a>
+          <a href="https://github.com/Jonar519/DSCOPS" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="/health">Health</a>
+        </nav>
+      </header>
+
+      <main class="workspace">
+        <section class="panel" aria-label="Editor">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span> app.dscops</div>
+            <div class="small-actions">
+              <button class="ghost" type="button" id="secure-sample">Ejemplo seguro</button>
+              <button class="ghost" type="button" id="insecure-sample">Ejemplo inseguro</button>
+            </div>
+          </div>
+
+          <div class="editor-wrap">
+            <pre class="gutter" id="gutter" aria-hidden="true">1</pre>
+            <textarea
+              id="source"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-label="Código DSCOPS"
+            ></textarea>
+          </div>
+
+          <div class="editor-foot">
+            <div class="targets" aria-label="Targets">
+              <label class="target"><input type="checkbox" value="compose" checked />compose</label>
+              <label class="target"
+                ><input type="checkbox" value="kubernetes" checked />kubernetes</label
+              >
+              <label class="target"><input type="checkbox" value="github-actions" />github</label>
+              <label class="target"><input type="checkbox" value="terraform" />terraform</label>
+            </div>
+            <div class="actions">
+              <button type="button" id="check-btn">Validar</button>
+              <button type="button" class="primary" id="compile-btn">Compilar</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel results" aria-label="Resultados">
+          <div class="statusbar">
+            <div class="status">
+              <span id="status-text">Listo para validar</span>
+              <span class="pill" id="status-pill">idle</span>
+            </div>
+            <div class="small-actions">
+              <span class="pill error" id="error-count">0 errores</span>
+              <span class="pill warning" id="warning-count">0 advertencias</span>
+              <span class="pill info" id="info-count">0 avisos</span>
+            </div>
+          </div>
+
+          <div class="results-body">
+            <div class="banner" id="banner" role="alert"></div>
+            <div class="diag-list" id="diagnostics">
+              <div class="empty">Pulsa <strong>Validar</strong> para ejecutar el análisis.</div>
+            </div>
+
+            <div class="artifact-head">
+              <div class="artifact-title">Artefactos generados</div>
+              <div class="small-actions">
+                <button class="ghost" type="button" id="copy-btn" disabled>Copiar</button>
+                <button class="ghost" type="button" id="download-btn" disabled>Descargar</button>
+              </div>
+            </div>
+            <div class="tabs" id="tabs"></div>
+            <pre class="artifact-content" id="artifact-content">Compila para ver Docker Compose, Kubernetes, GitHub Actions o Terraform.</pre>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>DSCOPS · compilador declarativo con análisis DevSecOps</span>
+        <span>Atajos: Ctrl+Enter compilar · Ctrl+Shift+Enter validar</span>
+      </footer>
+    </div>
+
+    <script>
+      const SECURE_SAMPLE = `# Infraestructura segura y compilable
+service api {
+  image: "python:3.12-slim"
+  port: 8000
+  replicas: 3
+  env: { DB_URL: secret("db_url"), DEBUG: false }
+  expose: public
+  user: "10001:10001"
+  resources: { cpu: "500m", memory: "512Mi" }
+}
+
+service worker {
+  image: "python:3.12-slim"
+  replicas: 2
+  env: { DB_URL: secret("db_url") }
+  user: "10001:10001"
+  resources: { cpu: "250m", memory: "256Mi" }
+}
+
+database main {
+  engine: postgres
+  version: "16"
+  size: "20GB"
+  expose: private
+}
+
+api -> main
+worker -> main
+`;
+
+      const INSECURE_SAMPLE = `# Ejemplo con defectos: valida y observa los hallazgos
+service api {
+  image: "python:latest"
+  port: 22
+  replicas: 1
+  env: { DB_PASSWORD: "admin123", DEBUG: true }
+  expose: public
+}
+
+database main {
+  engine: postgres
+  version: "16"
+  expose: public
+}
+
+api -> ghost
+`;
+
+      const sourceEl = document.getElementById("source");
+      const gutterEl = document.getElementById("gutter");
+      const diagnosticsEl = document.getElementById("diagnostics");
+      const bannerEl = document.getElementById("banner");
+      const statusTextEl = document.getElementById("status-text");
+      const statusPillEl = document.getElementById("status-pill");
+      const counts = {
+        error: document.getElementById("error-count"),
+        warning: document.getElementById("warning-count"),
+        info: document.getElementById("info-count"),
+      };
+      const tabsEl = document.getElementById("tabs");
+      const artifactEl = document.getElementById("artifact-content");
+      const copyBtn = document.getElementById("copy-btn");
+      const downloadBtn = document.getElementById("download-btn");
+      const checkBtn = document.getElementById("check-btn");
+      const compileBtn = document.getElementById("compile-btn");
+
+      let artifacts = [];
+      let activeArtifact = 0;
+
+      function setSource(value) {
+        sourceEl.value = value;
+        syncGutter();
+        sourceEl.focus();
+        sourceEl.setSelectionRange(0, 0);
+        sourceEl.scrollTop = 0;
+        gutterEl.scrollTop = 0;
+      }
+
+      function syncGutter() {
+        const lines = sourceEl.value.split("\n").length;
+        gutterEl.textContent = Array.from({ length: lines }, (_, index) => index + 1).join("\n");
+        gutterEl.scrollTop = sourceEl.scrollTop;
+      }
+
+      function selectedTargets() {
+        return Array.from(document.querySelectorAll(".targets input:checked")).map(
+          (input) => input.value,
+        );
+      }
+
+      function setBusy(busy, label) {
+        checkBtn.disabled = busy;
+        compileBtn.disabled = busy;
+        statusTextEl.textContent = busy ? label : statusTextEl.textContent;
+        if (busy) {
+          statusPillEl.className = "pill";
+          statusPillEl.textContent = "ejecutando";
+        }
+      }
+
+      function showBanner(message) {
+        bannerEl.textContent = message;
+        bannerEl.classList.toggle("show", Boolean(message));
+      }
+
+      function setStatus(kind, text) {
+        statusTextEl.textContent = text;
+        statusPillEl.className = "pill " + kind;
+        statusPillEl.textContent =
+          kind === "ok" ? "ok" : kind === "error" ? "con errores" : kind === "warning" ? "warnings" : "idle";
+      }
+
+      function resetCounts() {
+        counts.error.textContent = "0 errores";
+        counts.warning.textContent = "0 advertencias";
+        counts.info.textContent = "0 avisos";
+      }
+
+      function updateCounts(diagnostics) {
+        const total = { error: 0, warning: 0, info: 0 };
+        diagnostics.forEach((diagnostic) => {
+          if (total[diagnostic.severity] !== undefined) total[diagnostic.severity] += 1;
+        });
+        counts.error.textContent = total.error + (total.error === 1 ? " error" : " errores");
+        counts.warning.textContent =
+          total.warning + (total.warning === 1 ? " advertencia" : " advertencias");
+        counts.info.textContent = total.info + (total.info === 1 ? " aviso" : " avisos");
+        return total;
+      }
+
+      function jumpToLine(line, column) {
+        if (!line) return;
+        const lines = sourceEl.value.split("\n");
+        let index = 0;
+        for (let i = 0; i < Math.min(line - 1, lines.length); i += 1) index += lines[i].length + 1;
+        index += Math.max(0, (column || 1) - 1);
+        sourceEl.focus();
+        sourceEl.setSelectionRange(index, index);
+        const lineHeight = 20.6;
+        sourceEl.scrollTop = Math.max(0, (line - 4) * lineHeight);
+        syncGutter();
+      }
+
+      function renderDiagnostics(diagnostics) {
+        diagnosticsEl.replaceChildren();
+        if (!diagnostics.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Sin hallazgos. La infraestructura pasó todas las reglas.";
+          diagnosticsEl.append(empty);
+          return;
+        }
+
+        const sourceLines = sourceEl.value.split("\n");
+        diagnostics.forEach((diagnostic) => {
+          const card = document.createElement("div");
+          card.className = "diag " + diagnostic.severity;
+          card.tabIndex = 0;
+          card.addEventListener("click", () => jumpToLine(diagnostic.line, diagnostic.column));
+          card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") jumpToLine(diagnostic.line, diagnostic.column);
+          });
+
+          const top = document.createElement("div");
+          top.className = "diag-top";
+          const code = document.createElement("span");
+          code.className = "code";
+          code.textContent = diagnostic.severity.toUpperCase() + " " + diagnostic.code;
+          const message = document.createElement("span");
+          message.className = "diag-message";
+          message.textContent = diagnostic.message;
+          top.append(code, message);
+          card.append(top);
+
+          if (diagnostic.line) {
+            const meta = document.createElement("div");
+            meta.className = "diag-meta";
+            const lineText = sourceLines[diagnostic.line - 1] || "";
+            const location = diagnostic.column
+              ? `línea ${diagnostic.line}, columna ${diagnostic.column}`
+              : `línea ${diagnostic.line}`;
+            meta.textContent = location + (lineText ? "  ·  " + lineText.trim() : "");
+            card.append(meta);
+          }
+
+          if (diagnostic.hint) {
+            const hint = document.createElement("div");
+            hint.className = "diag-hint";
+            hint.textContent = diagnostic.hint;
+            card.append(hint);
+          }
+          diagnosticsEl.append(card);
+        });
+      }
+
+      function renderArtifacts(nextArtifacts) {
+        artifacts = nextArtifacts || [];
+        activeArtifact = 0;
+        tabsEl.replaceChildren();
+        if (!artifacts.length) {
+          artifactEl.textContent =
+            "Pulsa Compilar para generar Docker Compose, Kubernetes, GitHub Actions o Terraform.";
+          copyBtn.disabled = true;
+          downloadBtn.disabled = true;
+          return;
+        }
+        artifacts.forEach((artifact, index) => {
+          const tab = document.createElement("button");
+          tab.type = "button";
+          tab.className = "tab" + (index === 0 ? " active" : "");
+          tab.textContent = artifact.path;
+          tab.title = artifact.path;
+          tab.addEventListener("click", () => {
+            activeArtifact = index;
+            Array.from(tabsEl.children).forEach((child, childIndex) => {
+              child.classList.toggle("active", childIndex === index);
+            });
+            artifactEl.textContent = artifact.content;
+          });
+          tabsEl.append(tab);
+        });
+        artifactEl.textContent = artifacts[0].content;
+        copyBtn.disabled = false;
+        downloadBtn.disabled = false;
+      }
+
+      async function post(path, body) {
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error("El servidor devolvió una respuesta no JSON (HTTP " + response.status + ")");
+        }
+        if (!response.ok) {
+          const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+          throw new Error("HTTP " + response.status + ": " + detail);
+        }
+        return data;
+      }
+
+      function applyResult(data) {
+        const total = updateCounts(data.diagnostics || []);
+        renderDiagnostics(data.diagnostics || []);
+        if (!data.ok) {
+          setStatus(total.error ? "error" : "warning", "Revisa los hallazgos");
+        } else if (total.warning || total.info) {
+          setStatus("warning", "Válido, con avisos");
+        } else {
+          setStatus("ok", "Todo en orden");
+        }
+      }
+
+      async function runCheck() {
+        showBanner("");
+        setBusy(true, "Validando...");
+        try {
+          const data = await post("/v1/check", { source: sourceEl.value });
+          resetCounts();
+          applyResult(data);
+          renderArtifacts([]);
+        } catch (error) {
+          showBanner(String(error.message || error));
+          setStatus("error", "Error de red o de petición");
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function runCompile() {
+        const targets = selectedTargets();
+        if (!targets.length) {
+          showBanner("Selecciona al menos un target para compilar.");
+          return;
+        }
+        showBanner("");
+        setBusy(true, "Compilando...");
+        try {
+          const data = await post("/v1/compile", { source: sourceEl.value, targets });
+          resetCounts();
+          applyResult(data);
+          renderArtifacts(data.artifacts || []);
+          if (data.ok) setStatus("ok", "Compilado: " + (data.artifacts || []).length + " artefacto(s)");
+        } catch (error) {
+          showBanner(String(error.message || error));
+          setStatus("error", "Error de red o de petición");
+          renderArtifacts([]);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      document.getElementById("secure-sample").addEventListener("click", () => {
+        setSource(SECURE_SAMPLE);
+        renderArtifacts([]);
+        showBanner("");
+        resetCounts();
+      });
+
+      document.getElementById("insecure-sample").addEventListener("click", () => {
+        setSource(INSECURE_SAMPLE);
+        renderArtifacts([]);
+        showBanner("");
+        resetCounts();
+      });
+
+      checkBtn.addEventListener("click", runCheck);
+      compileBtn.addEventListener("click", runCompile);
+
+      sourceEl.addEventListener("input", () => {
+        syncGutter();
+        renderArtifacts([]);
+      });
+      sourceEl.addEventListener("scroll", () => {
+        gutterEl.scrollTop = sourceEl.scrollTop;
+      });
+      sourceEl.addEventListener("keydown", (event) => {
+        if (event.key === "Tab") {
+          event.preventDefault();
+          const start = sourceEl.selectionStart;
+          const end = sourceEl.selectionEnd;
+          sourceEl.value =
+            sourceEl.value.slice(0, start) + "  " + sourceEl.value.slice(end);
+          sourceEl.setSelectionRange(start + 2, start + 2);
+          syncGutter();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.key === "Enter") {
+          event.preventDefault();
+          if (event.shiftKey) runCheck();
+          else runCompile();
+        }
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        const artifact = artifacts[activeArtifact];
+        if (!artifact) return;
+        try {
+          await navigator.clipboard.writeText(artifact.content);
+          copyBtn.textContent = "Copiado";
+          setTimeout(() => {
+            copyBtn.textContent = "Copiar";
+          }, 1200);
+        } catch {
+          showBanner("No se pudo copiar al portapapeles.");
+        }
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        const artifact = artifacts[activeArtifact];
+        if (!artifact) return;
+        const blob = new Blob([artifact.content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = artifact.path.split("/").pop() || "artifact.txt";
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+
+      setSource(SECURE_SAMPLE);
+      resetCounts();
+      runCheck();
+    </script>
+  </body>
+</html>

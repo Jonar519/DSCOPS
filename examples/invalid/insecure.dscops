@@ -1,0 +1,16 @@
+# Intentionally insecure. `dscops check` must fail with several findings.
+service api {
+  image: "python:latest"
+  port: 22
+  replicas: 1
+  env: { DB_PASSWORD: "admin123", DEBUG: true }
+  expose: public
+}
+
+database main {
+  engine: postgres
+  version: "16"
+  expose: public
+}
+
+api -> ghost

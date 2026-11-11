@@ -1,0 +1,19 @@
+# The smallest useful program: one service and one database.
+service web {
+  image: "nginx:1.27-alpine"
+  port: 8080
+  replicas: 2
+  env: { APP_ENV: "production" }
+  expose: public
+  user: "101:101"
+  resources: { cpu: "250m", memory: "128Mi" }
+}
+
+database db {
+  engine: postgres
+  version: "16"
+  size: "10GB"
+  expose: private
+}
+
+web -> db

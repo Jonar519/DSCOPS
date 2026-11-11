@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, types, tests and generated artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install uv
+        run: python -m pip install "uv==0.13.7"
+
+      - name: Sync locked environment
+        run: uv sync --locked --extra dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Mypy
+        run: uv run mypy src
+
+      - name: Tests and coverage
+        run: uv run pytest --cov=dscops --cov-report=term-missing --cov-fail-under=80
+
+      - name: Validate examples with the compiler itself
+        run: uv run dscops check examples/*.dscops
+
+      - name: Build all artifacts
+        run: uv run dscops build examples/app.dscops --target compose,kubernetes,github,terraform --out dist
+
+      - name: Validate Compose output
+        env:
+          DB_URL: postgresql://main:ci@main:5432/main
+          MAIN_PASSWORD: ci
+          CACHE_PASSWORD: ci
+        run: docker compose -f dist/compose.yaml config --quiet
+
+      - name: Validate Kubernetes output
+        run: |
+          docker run --rm \
+            -v "$PWD/dist:/dist" \
+            ghcr.io/yannh/kubeconform:v0.8.0 \
+            -strict -summary /dist/k8s.yaml
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dscops-artifacts
+          path: dist/
+          if-no-files-found: error
+          include-hidden-files: true
+
+  docker:
+    name: Build API image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build non-root API image
+        run: docker build -t dscops-api:ci .

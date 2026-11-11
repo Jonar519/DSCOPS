@@ -1,0 +1,414 @@
+# serializer version: 1
+# name: test_compose_snapshot
+  '''
+  services:
+    api:
+      image: python:3.12-slim
+      restart: unless-stopped
+      user: 10001:10001
+      security_opt:
+      - no-new-privileges:true
+      init: true
+      environment:
+        DB_URL: ${DB_URL}
+        DEBUG: 'false'
+      command:
+      - sh
+      - -c
+      - python -m http.server 8000
+      ports:
+      - 8000-8002:8000
+      deploy:
+        replicas: 3
+        resources:
+          limits:
+            cpus: '0.5'
+            memory: 512M
+      depends_on:
+        main:
+          condition: service_healthy
+        cache:
+          condition: service_healthy
+      labels:
+        dscops.resource: service
+        dscops.name: api
+    worker:
+      image: python:3.12-slim
+      restart: unless-stopped
+      user: 10001:10001
+      security_opt:
+      - no-new-privileges:true
+      init: true
+      environment:
+        DB_URL: ${DB_URL}
+      deploy:
+        replicas: 2
+        resources:
+          limits:
+            cpus: '0.25'
+            memory: 256M
+      depends_on:
+        main:
+          condition: service_healthy
+      labels:
+        dscops.resource: service
+        dscops.name: worker
+    main:
+      image: postgres:16
+      restart: unless-stopped
+      security_opt:
+      - no-new-privileges:true
+      environment:
+        POSTGRES_USER: main
+        POSTGRES_PASSWORD: ${MAIN_PASSWORD}
+        POSTGRES_DB: main
+      volumes:
+      - main_data:/var/lib/postgresql/data
+      expose:
+      - '5432'
+      deploy:
+        replicas: 1
+      labels:
+        dscops.resource: database
+        dscops.name: main
+        dscops.size: 20GB
+      healthcheck:
+        test:
+        - CMD-SHELL
+        - pg_isready -U main -d main
+        interval: 5s
+        timeout: 3s
+        retries: 10
+    cache:
+      image: redis:7.2
+      restart: unless-stopped
+      security_opt:
+      - no-new-privileges:true
+      environment:
+        REDIS_PASSWORD: ${CACHE_PASSWORD}
+      volumes:
+      - cache_data:/data
+      expose:
+      - '6379'
+      deploy:
+        replicas: 1
+      labels:
+        dscops.resource: database
+        dscops.name: cache
+        dscops.size: 5GB
+      command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD"
+      healthcheck:
+        test:
+        - CMD-SHELL
+        - redis-cli -a "$$REDIS_PASSWORD" ping
+        interval: 5s
+        timeout: 3s
+        retries: 10
+  volumes:
+    main_data:
+      name: dscops_main_data
+    cache_data:
+      name: dscops_cache_data
+  
+  '''
+# ---
+# name: test_kubernetes_snapshot
+  '''
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: api
+    labels:
+      app: api
+      dscops.io/kind: service
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    replicas: 3
+    selector:
+      matchLabels:
+        app: api
+    template:
+      metadata:
+        labels:
+          app: api
+          dscops.io/kind: service
+          app.kubernetes.io/managed-by: dscops
+      spec:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
+          fsGroup: 10001
+        containers:
+        - name: api
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          command:
+          - sh
+          - -c
+          args:
+          - python -m http.server 8000
+          ports:
+          - name: http
+            containerPort: 8000
+            protocol: TCP
+          env:
+          - name: DB_URL
+            valueFrom:
+              secretKeyRef:
+                name: api-secrets
+                key: DB_URL
+          - name: DEBUG
+            value: 'false'
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: api
+    labels:
+      app: api
+      dscops.io/kind: service
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    type: ClusterIP
+    selector:
+      app: api
+    ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  ---
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    name: api
+    labels:
+      app: api
+      dscops.io/kind: service
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    rules:
+    - host: api.dscops.local
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: api
+              port:
+                number: 8000
+  ---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: worker
+    labels:
+      app: worker
+      dscops.io/kind: service
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: worker
+    template:
+      metadata:
+        labels:
+          app: worker
+          dscops.io/kind: service
+          app.kubernetes.io/managed-by: dscops
+      spec:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
+          fsGroup: 10001
+        containers:
+        - name: worker
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          env:
+          - name: DB_URL
+            valueFrom:
+              secretKeyRef:
+                name: worker-secrets
+                key: DB_URL
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+  ---
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: main
+    labels:
+      app: main
+      dscops.io/kind: database
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    serviceName: main
+    replicas: 1
+    selector:
+      matchLabels:
+        app: main
+    template:
+      metadata:
+        labels:
+          app: main
+          dscops.io/kind: database
+          app.kubernetes.io/managed-by: dscops
+      spec:
+        securityContext:
+          fsGroup: 999
+        containers:
+        - name: main
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          ports:
+          - name: db
+            containerPort: 5432
+            protocol: TCP
+          volumeMounts:
+          - name: data
+            mountPath: /var/lib/postgresql/data
+          env:
+          - name: POSTGRES_USER
+            value: main
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: main-secrets
+                key: POSTGRES_PASSWORD
+          - name: POSTGRES_DB
+            value: main
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: main
+    labels:
+      app: main
+      dscops.io/kind: database
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    type: ClusterIP
+    selector:
+      app: main
+    ports:
+    - name: db
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  ---
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: cache
+    labels:
+      app: cache
+      dscops.io/kind: database
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    serviceName: cache
+    replicas: 1
+    selector:
+      matchLabels:
+        app: cache
+    template:
+      metadata:
+        labels:
+          app: cache
+          dscops.io/kind: database
+          app.kubernetes.io/managed-by: dscops
+      spec:
+        securityContext:
+          fsGroup: 999
+        containers:
+        - name: cache
+          image: redis:7.2
+          imagePullPolicy: IfNotPresent
+          ports:
+          - name: db
+            containerPort: 6379
+            protocol: TCP
+          volumeMounts:
+          - name: data
+            mountPath: /data
+          env:
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: cache-secrets
+                key: CACHE_PASSWORD
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          args:
+          - --requirepass
+          - $(REDIS_PASSWORD)
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: cache
+    labels:
+      app: cache
+      dscops.io/kind: database
+      app.kubernetes.io/managed-by: dscops
+  spec:
+    type: ClusterIP
+    selector:
+      app: cache
+    ports:
+    - name: db
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+  
+  '''
+# ---

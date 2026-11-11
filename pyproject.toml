@@ -1,0 +1,115 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dscops"
+version = "0.1.0"
+description = "Declarative Secure Compiler for Ops: compile infrastructure DSL into secure deployment artifacts."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "DSCOPS Team" }]
+keywords = ["compiler", "devsecops", "docker", "kubernetes", "lark", "infrastructure"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Compilers",
+]
+dependencies = [
+  "fastapi>=0.115,<1",
+  "jinja2>=3.1,<4",
+  "lark>=1.2,<2",
+  "pydantic>=2.9,<3",
+  "pyyaml>=6.0,<7",
+  "rich>=13.9,<15",
+  "typer>=0.15,<1",
+  "uvicorn[standard]>=0.32,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "mypy>=1.14,<2",
+  "pre-commit>=4.0,<5",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6.0,<7",
+  "ruff>=0.9,<1",
+  "syrupy>=4.8,<5",
+  "types-pyyaml>=6.0.12,<7",
+]
+
+[project.scripts]
+dscops = "dscops.interfaces.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/Jonar519/DSCOPS"
+Repository = "https://github.com/Jonar519/DSCOPS"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dscops = [
+  "frontend/grammar.lark",
+  "interfaces/api/static/*.html",
+  "backends/templates/*.j2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["error::DeprecationWarning:dscops.*"]
+
+[tool.coverage.run]
+branch = true
+source = ["dscops"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "\\.\\.\\.",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = [".venv*", "tests/integration/__snapshots__", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PIE", "PT"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PT011"]
+"src/dscops/interfaces/cli.py" = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["dscops"]
+show_error_codes = true
+pretty = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+module = ["yaml.*", "lark.*"]
+ignore_missing_imports = true

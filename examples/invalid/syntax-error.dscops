@@ -1,0 +1,4 @@
+# Missing the closing brace of the service block.
+service api {
+  image: "python:3.12-slim"
+  port: 8000

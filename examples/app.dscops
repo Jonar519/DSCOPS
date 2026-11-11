@@ -1,0 +1,41 @@
+# DSCOPS demo: a public API, a private worker and two databases.
+# Everything that must be secret is declared with secret("..."), never inline.
+
+service api {
+  image: "python:3.12-slim"
+  port: 8000
+  replicas: 3
+  env: { DB_URL: secret("db_url"), DEBUG: false }
+  expose: public
+  user: "10001:10001"
+  resources: { cpu: "500m", memory: "512Mi" }
+  command: "python -m http.server 8000"
+}
+
+service worker {
+  image: "python:3.12-slim"
+  replicas: 2
+  env: { DB_URL: secret("db_url") }
+  expose: private
+  user: "10001:10001"
+  resources: { cpu: "250m", memory: "256Mi" }
+  command: "python -m http.server 8081"
+}
+
+database main {
+  engine: postgres
+  version: "16"
+  size: "20GB"
+  expose: private
+}
+
+database cache {
+  engine: redis
+  version: "7.2"
+  size: "5GB"
+  expose: private
+}
+
+api -> main
+api -> cache
+worker -> main
