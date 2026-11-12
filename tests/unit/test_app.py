@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from dscops.app import MAX_SOURCE_LENGTH, check_source, compile_source, compiler, targets
@@ -84,7 +86,11 @@ def test_empty_source_compiles_to_empty_artifacts() -> None:
     assert result.artifacts[0].path == "compose.yaml"
 
 
-def test_backend_failure_is_reported(monkeypatch: pytest.MonkeyPatch, valid_source: str) -> None:
+def test_backend_failure_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+    valid_source: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     class BrokenBackend:
         name = "broken"
         description = "broken"
@@ -93,11 +99,13 @@ def test_backend_failure_is_reported(monkeypatch: pytest.MonkeyPatch, valid_sour
             raise RuntimeError("boom")
 
     monkeypatch.setattr(compiler, "get_backend", lambda _name: BrokenBackend())
-    result = compile_source(valid_source, ["compose"])
+    with caplog.at_level(logging.ERROR, logger="dscops.app.compiler"):
+        result = compile_source(valid_source, ["compose"])
     assert result.ok is False
     assert result.artifacts == ()
     diagnostic = next(item for item in result.diagnostics if item.code == "GEN001")
     assert "boom" in diagnostic.message
+    assert "boom" in caplog.text
 
 
 def test_backend_with_no_artifacts_is_reported(

@@ -63,6 +63,11 @@ def health_v1() -> HealthResponse:
     return health()
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> FileResponse:
+    return FileResponse(_STATIC_DIR / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.get("/playground", include_in_schema=False)
 def playground() -> FileResponse:
     return FileResponse(_STATIC_DIR / "playground.html", media_type="text/html")

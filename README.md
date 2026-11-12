@@ -299,7 +299,9 @@ El CI ejecuta además:
 
 - `docker compose -f dist/compose.yaml config` sobre el Compose generado.
 - `kubeconform -strict` sobre el Kubernetes generado.
-- `docker build` de la API.
+- `docker build` de la API y un escaneo Trivy de la imagen.
+- Semgrep con las reglas OWASP Top 10, Bandit, pip-audit, gitleaks y Trivy sobre el repo.
+- SonarQube, cuando existen los secrets `SONAR_TOKEN` y `SONAR_HOST_URL`.
 
 Pruebas incluidas:
 

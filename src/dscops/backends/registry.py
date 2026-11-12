@@ -29,7 +29,7 @@ def register(backend: Backend, *, aliases: tuple[str, ...] = ()) -> None:
     """Register a backend under its canonical name plus optional aliases."""
 
     if backend.name in _BACKENDS:
-        raise ValueError(f"backend já registrado: {backend.name}")
+        raise ValueError(f"backend ya registrado: {backend.name}")
     _BACKENDS[backend.name] = _Entry(backend=backend, aliases=aliases)
 
 

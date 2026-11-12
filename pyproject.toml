@@ -34,12 +34,13 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "httpx>=0.28,<1",
+  "httpx2>=2,<3",
   "mypy>=1.14,<2",
   "pre-commit>=4.0,<5",
-  "pytest>=8.3,<9",
+  "pytest>=9.0.3,<10",
   "pytest-cov>=6.0,<7",
   "ruff>=0.9,<1",
-  "syrupy>=4.8,<5",
+  "syrupy>=7,<8",
   "types-pyyaml>=6.0.12,<7",
 ]
 
@@ -60,13 +61,14 @@ where = ["src"]
 dscops = [
   "frontend/grammar.lark",
   "interfaces/api/static/*.html",
+  "interfaces/api/static/*.svg",
   "backends/templates/*.j2",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
-filterwarnings = ["error::DeprecationWarning:dscops.*"]
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 branch = true

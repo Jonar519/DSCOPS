@@ -38,9 +38,10 @@ class TerraformBackend:
             ],
             "databases": [_database_context(database, secret_vars) for database in model.databases],
         }
-        environment = Environment(
+        # HCL is not HTML. Autoescape would corrupt quotes and ${} interpolations.
+        environment = Environment(  # nosec B701
             undefined=StrictUndefined,
-            autoescape=False,
+            autoescape=False,  # nosemgrep: python.jinja2.security.audit.autoescape-disabled-false.incorrect-autoescape-disabled
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,

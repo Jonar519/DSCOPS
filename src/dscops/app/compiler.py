@@ -7,6 +7,7 @@ logic.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from dscops.analysis import run_rules
@@ -22,6 +23,8 @@ from dscops.domain.diagnostics import Diagnostic, Severity, has_errors
 from dscops.domain.model import InfraModel
 from dscops.frontend import ParseError, parse
 from dscops.semantic import build_model
+
+logger = logging.getLogger(__name__)
 
 MAX_SOURCE_LENGTH = 100_000
 
@@ -143,6 +146,7 @@ def compile_source(source: str, targets: list[str]) -> CompileResult:
         for target in selected:
             artifacts.extend(get_backend(target).generate(analysis.model))
     except Exception as error:  # noqa: BLE001 - a backend bug must not crash the API
+        logger.exception("falló el backend %s", target)
         diagnostics.append(
             _diagnostic(
                 "GEN001",

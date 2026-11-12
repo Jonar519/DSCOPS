@@ -128,6 +128,12 @@ def test_playground_and_root(client: TestClient) -> None:
     assert page.status_code == 200
     assert page.headers["content-type"].startswith("text/html")
     assert "DSCOPS Playground" in page.text
+    assert "haz clic en un hallazgo" in page.text.lower()
+    assert page.text.count("/v1/targets") >= 1
+
+    favicon = client.get("/favicon.ico")
+    assert favicon.status_code == 200
+    assert "image/svg" in favicon.headers["content-type"]
 
     redirect = client.get("/", follow_redirects=False)
     assert redirect.status_code == 307

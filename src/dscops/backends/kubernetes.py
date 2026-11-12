@@ -142,8 +142,16 @@ def _deployment(service: Service) -> dict[str, Any]:
     }
 
 
+def _require_port(service: Service) -> int:
+    """Ports are optional on the model, but a Service or Ingress always needs one."""
+
+    if service.port is None:
+        raise RuntimeError(f"el servicio '{service.name}' no tiene puerto")
+    return service.port
+
+
 def _service(service: Service) -> dict[str, Any]:
-    assert service.port is not None
+    port = _require_port(service)
     return {
         "apiVersion": "v1",
         "kind": "Service",
@@ -154,8 +162,8 @@ def _service(service: Service) -> dict[str, Any]:
             "ports": [
                 {
                     "name": "http",
-                    "port": service.port,
-                    "targetPort": service.port,
+                    "port": port,
+                    "targetPort": port,
                     "protocol": "TCP",
                 }
             ],
@@ -164,7 +172,7 @@ def _service(service: Service) -> dict[str, Any]:
 
 
 def _ingress(service: Service) -> dict[str, Any]:
-    assert service.port is not None
+    port = _require_port(service)
     return {
         "apiVersion": "networking.k8s.io/v1",
         "kind": "Ingress",
@@ -181,7 +189,7 @@ def _ingress(service: Service) -> dict[str, Any]:
                                 "backend": {
                                     "service": {
                                         "name": service.name,
-                                        "port": {"number": service.port},
+                                        "port": {"number": port},
                                     }
                                 },
                             }
