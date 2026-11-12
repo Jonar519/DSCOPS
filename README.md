@@ -60,6 +60,18 @@ sirve directamente como *gate* de CI.
 El playground se sirve desde la misma API (`/playground`) y llama a los mismos
 endpoints que un cliente externo.
 
+### Frontend Next.js
+
+La carpeta [`web/`](web/) contiene el frontend nuevo en Next.js (página de
+inicio + playground con validación en vivo y animaciones). Usa la misma API:
+
+```bash
+uv run dscops serve          # API en :8000
+cd web && npm install && npm run dev   # web en http://localhost:3000
+```
+
+Detalles y estructura en [`web/README.md`](web/README.md).
+
 ## Características
 
 - Lenguaje pequeño y legible: `service`, `database`, propiedades y `->`.

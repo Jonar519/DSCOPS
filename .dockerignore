@@ -16,3 +16,5 @@ examples
 AGENTS.md
 Dockerfile
 .dockerignore
+web
+.gitleaks.toml

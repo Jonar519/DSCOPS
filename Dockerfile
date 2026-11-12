@@ -11,6 +11,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# Aplica los parches de seguridad de Debian publicados después de la imagen base.
+# Sin esto, Trivy reporta CVEs HIGH/CRITICAL que ya tienen versión corregida.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --gid 10001 dscops \
     && useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin dscops
 

@@ -1,0 +1,21 @@
+# Configuración de Gitleaks para DSCOPS.
+# Usa las reglas por defecto y solo añade excepciones para falsos positivos
+# conocidos. Cada excepción explica por qué no es un secreto real.
+
+title = "DSCOPS"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "sonar.projectKey es el identificador público del proyecto en SonarQube, no una credencial."
+regexTarget = "line"
+regexes = ['''^sonar\.projectKey=''']
+
+[[allowlists]]
+description = "Artefactos locales de build del frontend (ignorados por git, nunca se suben)."
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.venv[^/]*/''',
+]
