@@ -12,3 +12,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # El proyecto apunta a Python 3.12 (pyproject.toml y mypy).
+      # Subir a 3.13/3.14/3.15 es una decisión del equipo, no una actualización automática.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
